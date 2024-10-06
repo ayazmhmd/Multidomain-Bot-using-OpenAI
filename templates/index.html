@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Domain AI Assistant</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            height: 100%;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        .container {
+            display: flex;
+            height: 100%;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            padding: 20px;
+            color: white;
+        }
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .chatbot-container {
+            flex-grow: 1;
+            background-image: url('https://source.unsplash.com/random/1600x900?technology');
+            background-size: cover;
+            background-position: center;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chat-header {
+            background-color: rgba(44, 62, 80, 0.8);
+            color: white;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        .user-input {
+            display: flex;
+            padding: 15px;
+            background-color: rgba(44, 62, 80, 0.8);
+        }
+        #message-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 20px;
+            margin-right: 10px;
+        }
+        #send-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 20px;
+        }
+        #send-button:hover {
+            background-color: #2980b9;
+        }
+        .domain-button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #34495e;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .domain-button:hover, .domain-button.active {
+            background-color: #3498db;
+        }
+        .message {
+            max-width: 80%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 20px;
+            line-height: 1.4;
+        }
+        .user-message {
+            align-self: flex-end;
+            background-color: #3498db;
+            color: white;
+        }
+        .bot-message {
+            align-self: flex-start;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>Choose Domain</h2>
+            <button class="domain-button active" data-type="medical">Medical</button>
+            <button class="domain-button" data-type="sports">Sports</button>
+            <button class="domain-button" data-type="education">Education</button>
+            <button class="domain-button" data-type="entertainment">Entertainment</button>
+            <button class="domain-button" data-type="mathematics">Mathematics</button>
+        </div>
+        <div class="main-content">
+            <div class="chatbot-container">
+                <div class="chat-header">Multi-Domain AI Assistant</div>
+                <div class="chat-messages" id="chat-messages"></div>
+                <div class="user-input">
+                    <input type="text" id="message-input" placeholder="Type your message...">
+                    <button id="send-button">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const domainButtons = document.querySelectorAll('.domain-button');
+        let currentDomain = 'medical';
+
+        domainButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                domainButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                currentDomain = button.dataset.type;
+                updateChatHeader();
+                clearChatMessages();
+            });
+        });
+
+        function updateChatHeader() {
+            const chatHeader = document.querySelector('.chat-header');
+            chatHeader.textContent = `${currentDomain.charAt(0).toUpperCase() + currentDomain.slice(1)} Assistant`;
+        }
+
+        function clearChatMessages() {
+            chatMessages.innerHTML = '';
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message) {
+                addMessage('You', message, 'user-message');
+                messageInput.value = '';
+                
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message, promptType: currentDomain }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    addMessage('Assistant', data.response, 'bot-message');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    addMessage('Assistant', 'Sorry, there was an error processing your request.', 'bot-message');
+                });
+            }
+        }
+
+        function addMessage(sender, message, className) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', className);
+            messageElement.textContent = `${sender}: ${message}`;
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        updateChatHeader();
+    </script>
+</body>
+</html>
